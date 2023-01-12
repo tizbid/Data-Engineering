@@ -1,69 +1,42 @@
 import configparser
-
-
-config = configparser.ConfigParser()
-language_key = config['language']['key']
-language_endpoint = config['language']['endpoint']
-
+import pandas as pd
 from azure.ai.textanalytics import TextAnalyticsClient
 from azure.core.credentials import AzureKeyCredential
 
-# Authenticate the client using your key and endpoint 
-def authenticate_client():
-    ta_credential = AzureKeyCredential(language_key)
-    text_analytics_client = TextAnalyticsClient(
-            endpoint=language_endpoint, 
-            credential=ta_credential)
-    return text_analytics_client
 
-client = authenticate_client()
+# Import credentials
+config = configparser.ConfigParser()
+#Read configuration
+config.read('config.ini')
+language_key = config['language']['key']
+language_endpoint = config['language']['endpoint']
 
-# Example method for detecting sentiment and opinions in text 
-def sentiment_analysis_with_opinion_mining_example(client):
 
-    documents = [
-        "The food and service were unacceptable. The concierge was nice, however."
-    ]
 
-    result = client.analyze_sentiment(documents, show_opinion_mining=True)
-    doc_result = [doc for doc in result if not doc.is_error]
+def sentiment_analysis_df(csv_path:str):
+    
+    # Initialize the client with an API key
+    credential = AzureKeyCredential(language_key)
+    client = TextAnalyticsClient(endpoint=language_endpoint,credential=credential)
 
-    positive_reviews = [doc for doc in doc_result if doc.sentiment == "positive"]
-    negative_reviews = [doc for doc in doc_result if doc.sentiment == "negative"]
+    # Read dataframe
+    df = pd.read_csv(csv_path)
+    # Create a new column to store the sentiment scores
+    df["sentiment_score"] = None
 
-    positive_mined_opinions = []
-    mixed_mined_opinions = []
-    negative_mined_opinions = []
+    # Iterate over the rows of the DataFrame#
+    for i, row in df.iterrows():  
+        text = [row['twit']]
+        # Perform sentiment analysis
+        response = client.analyze_sentiment(text)
 
-    for document in doc_result:
-        print("Document Sentiment: {}".format(document.sentiment))
-        print("Overall scores: positive={0:.2f}; neutral={1:.2f}; negative={2:.2f} \n".format(
-            document.confidence_scores.positive,
-            document.confidence_scores.neutral,
-            document.confidence_scores.negative,
-        ))
-        for sentence in document.sentences:
-            print("Sentence: {}".format(sentence.text))
-            print("Sentence sentiment: {}".format(sentence.sentiment))
-            print("Sentence score:\nPositive={0:.2f}\nNeutral={1:.2f}\nNegative={2:.2f}\n".format(
-                sentence.confidence_scores.positive,
-                sentence.confidence_scores.neutral,
-                sentence.confidence_scores.negative,
-            ))
-            for mined_opinion in sentence.mined_opinions:
-                target = mined_opinion.target
-                print("......'{}' target '{}'".format(target.sentiment, target.text))
-                print("......Target score:\n......Positive={0:.2f}\n......Negative={1:.2f}\n".format(
-                    target.confidence_scores.positive,
-                    target.confidence_scores.negative,
-                ))
-                for assessment in mined_opinion.assessments:
-                    print("......'{}' assessment '{}'".format(assessment.sentiment, assessment.text))
-                    print("......Assessment score:\n......Positive={0:.2f}\n......Negative={1:.2f}\n".format(
-                        assessment.confidence_scores.positive,
-                        assessment.confidence_scores.negative,
-                    ))
-            print("\n")
-        print("\n")
-          
-sentiment_analysis_with_opinion_mining_example(client)
+        # Extract the sentiment score and store it in the new column
+        sentiment_score = response[0].sentiment
+        df.at[i, "sentiment_score"] = sentiment_score
+    
+    df.to_csv('Sentiment-Analysis/SA_df.csv',index=False)
+    
+    return 
+
+
+
