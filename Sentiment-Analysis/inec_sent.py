@@ -34,7 +34,7 @@ def sentiment_analysis_df(csv_path:str):
         sentiment_score = response[0].sentiment
         df.at[i, "sentiment_score"] = sentiment_score
     
-    df.to_csv('Sentiment-Analysis/SA_df.csv',index=False)
+    #df.to_csv('Sentiment-Analysis/SA_df.csv',index=False)
     
     return 
 
