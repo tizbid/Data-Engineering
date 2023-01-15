@@ -27,12 +27,23 @@ def get_tweets(topic:str, num_of_tweets,api = auth()):
     # Get the 100 most recent tweets made to the handle
     tweets = api.search_tweets(q=topic, tweet_mode='extended',count=num_of_tweets)
 
-    # Create an empty DataFrame to store the tweets
-    tweets_df = pd.DataFrame(columns=[ "text"])
+    # Create an empty DataFrame to store Location
+    df = pd.DataFrame(columns=["Location"])
 
-    # Clean tweet and print the text of each tweet
-    for tweet in tweets:
+    # loop through the tweets and add the information to the dataframe
+    for i, tweet in enumerate(tweets):
+        
+        
+        if tweet.coordinates:
+            df.loc[i, 'Location'] = tweet.coordinates
+            
+        elif tweet.user.location: 
+            df.loc[i, 'Location'] = tweet.user.location
 
+        else:
+            df.loc[i, 'Location'] = 'Not Available'
+        
+        
         # Ensure full text is returned
         try:
             tweet = tweet.retweeted_status.full_text 
@@ -49,7 +60,6 @@ def get_tweets(topic:str, num_of_tweets,api = auth()):
         tweet = tweet.lower()
 
         # Remove stopwords
-
         stopwords_list = stopwords.words('english')
         tweet_words = tweet.split()
         tweet_without_stopwords = [word for word in tweet_words if word not in stopwords_list]
@@ -57,14 +67,16 @@ def get_tweets(topic:str, num_of_tweets,api = auth()):
         # Rejoin tweet
         tweet = ' '.join(tweet_without_stopwords)
 
-        tweet_df = pd.DataFrame({ "text": [tweet]})
+        # store tweets
+        df.loc[i, 'Tweet'] = tweet
+    
+    df.drop_duplicates(keep='last')
+       
+    df.to_csv('Sentiment-Analysis/tweets_df.csv',index=True)
+    return df 
 
-        tweets_df = tweets_df.append(tweet_df, ignore_index=True)
-        
-    tweets_df.to_csv('tweets_df.csv',index=False)
-    return 
+df = get_tweets('inec',10)
 
-get_tweets('inec',10)
 
 
 
