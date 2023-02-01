@@ -1,27 +1,13 @@
 import psycopg2
-import configparser
+from auth import auth_pgdb
 import csv
 
 
-# Import credentials
-config = configparser.ConfigParser()
-#Read configuration
-config.read('config.ini')
-language_key = config['language']['key']
-language_endpoint = config['language']['endpoint']
-
-
-
-# Update connection string information
-host = config['postgreSQL_DB']['host']
-dbname = config['postgreSQL_DB']['dbname']
-user = config['postgreSQL_DB']['user']
-password = config['postgreSQL_DB']['password']
-sslmode = config['postgreSQL_DB']['sslmode']
-
-# Construct connection string
-
+#Construct connection string
 def db_connect():
+    
+    #import database credentials
+    host,dbname,user,password,sslmode = auth_pgdb()
     
     conn_string = "host={0} user={1} dbname={2} password={3} sslmode={4}".format(host, user, dbname, password, sslmode)
     conn = psycopg2.connect(conn_string)
@@ -55,3 +41,5 @@ def db_connect():
     conn.close()
     
     return
+
+db_connect()
